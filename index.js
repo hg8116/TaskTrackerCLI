@@ -27,10 +27,15 @@ async function readAllTasks() {
 }
 
 program
-  .command('list')
-  .description('List all tasks')
-  .action(async () => {
+  .command('list [option]')
+  .description('List tasks')
+  .action(async (option) => {
     const allTasks = await readAllTasks()
+
+    if (![undefined, "done", "todo", "in-progress"].includes(option)) {
+      console.error("Invalid option, it should be 'done', 'todo', 'in-progress', or blank")
+      process.exit(1)
+    }
 
     for (let i = 0; i < allTasks.length; i++) {
 
@@ -38,14 +43,26 @@ program
       let task = allTasks[i].task
       let status = allTasks[i].status
 
-      console.log(id, ' - ', task, ' - ', status)
+      if (!option) {
+        console.log(id, ' - ', task, ' - ', status)
+      }
+      else if (option === "done" && status === "Completed") {
+        console.log(id, ' - ', task, ' - ', status)
+      }
+      else if (option === "todo" && status === "Incomplete") {
+        console.log(id, ' - ', task, ' - ', status)
+      }
+      else if (option === "in-progress" && status === "Inprogress") {
+        console.log(id, ' - ', task, ' - ', status)
+      }
     }
   })
 
 // Add new task
 async function addTask(task) {
   let allTasks = await readAllTasks()
-  allTasks.push({ id: allTasks.length + 1, task: task, status: "incomplete" })
+  let newId = Math.max(...allTasks.map(task => task.id)) + 1
+  allTasks.push({ id: newId, task: task, status: "Incomplete" })
 
   console.log(allTasks)
 
@@ -98,12 +115,12 @@ program
     await deleteTask(taskId)
   })
 
-// Mark complete
-async function markComplete(taskId) {
+// Mark complete/ inprogress/ incomplete
+async function editStatus(taskId, status) {
   let allTasks = await readAllTasks()
   for (let i = 0; i < allTasks.length; i++) {
     if (allTasks[i].id === parseInt(taskId)) {
-      allTasks[i].status = "Completed"
+      allTasks[i].status = status
       break
     }
   }
@@ -120,10 +137,24 @@ async function markComplete(taskId) {
 }
 
 program
-  .command('completed <id>')
+  .command('mark-done <id>')
   .description('Mark a task completed')
   .action(async (taskId) => {
-    await markComplete(taskId)
+    await editStatus(taskId, "Completed")
+  })
+
+program
+  .command('mark-in-progress <id>')
+  .description('Mark a task completed')
+  .action(async (taskId) => {
+    await editStatus(taskId, "Inprogress")
+  })
+
+program
+  .command('mark-incomplete <id>')
+  .description('Mark a task completed')
+  .action(async (taskId) => {
+    await editStatus(taskId, "Incomplete")
   })
 
 // Edit tasks
