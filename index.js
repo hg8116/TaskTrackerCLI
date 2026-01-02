@@ -3,10 +3,16 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import inquirer from "inquirer";
+import Table from 'cli-table3'
 import fs from 'fs/promises'
+import figlet from "figlet"
 
 const program = new Command()
 const sourceFile = "tasks.json"
+
+//console.log(
+//  chalk.cyan(figlet.textSync("Task Tracker CLI", { horizontalLayout: "full" }))
+//)
 
 program
   .name('task-tracker-cli')
@@ -37,24 +43,29 @@ program
       process.exit(1)
     }
 
+    let taskTable = new Table({
+      head: ["ID", "Description", "Status"],
+    })
+
     for (let i = 0; i < allTasks.length; i++) {
 
       let id = allTasks[i].id
-      let task = allTasks[i].task
+      let description = allTasks[i].task
       let status = allTasks[i].status
 
       if (!option) {
         if (status === "done")
-          console.log(chalk.green(id, ' - ', task, ' - ', status))
+          taskTable.push([chalk.green(id), chalk.green(description), chalk.green(status)])
         else if (status === "todo")
-          console.log(chalk.blue(id, ' - ', task, ' - ', status))
+          taskTable.push([chalk.blue(id), chalk.blue(description), chalk.blue(status)])
         else if (status === "in-progress")
-          console.log(chalk.yellow(id, ' - ', task, ' - ', status))
+          taskTable.push([chalk.yellow(id), chalk.yellow(description), chalk.yellow(status)])
       }
       else if (option === status) {
-        console.log(id, ' - ', task, ' - ', status)
+        taskTable.push([id, description, status])
       }
     }
+    console.log(taskTable.toString())
   })
 
 // Add new task
@@ -90,8 +101,6 @@ program
 async function deleteTask(taskId) {
   let allTasks = await readAllTasks()
   let deleteIndex = allTasks.findIndex((val) => val.id === parseInt(taskId))
-
-  console.log(deleteIndex)
 
   if (deleteIndex > -1) {
     allTasks.splice(deleteIndex, 1);
@@ -190,7 +199,3 @@ program
 program.parse()
 
 const options = program.opts()
-if (options.debug) {
-  console.log('Debug mode is enabled')
-  console.log('Options: ', options)
-}

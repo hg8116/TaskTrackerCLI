@@ -12,7 +12,12 @@
   "type": "module",
   "dependencies": {
     "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
+    "figlet": "^1.9.4",
     "inquirer": "^13.1.0"
+  },
+  "bin": {
+    "tt-cli": "./index.js"
   }
 }
