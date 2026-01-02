@@ -33,7 +33,7 @@ program
     const allTasks = await readAllTasks()
 
     if (![undefined, "done", "todo", "in-progress"].includes(option)) {
-      console.error("Invalid option, it should be 'done', 'todo', 'in-progress', or blank")
+      console.error(chalk.red("Invalid option, it should be 'done', 'todo', 'in-progress', or blank"))
       process.exit(1)
     }
 
@@ -44,15 +44,14 @@ program
       let status = allTasks[i].status
 
       if (!option) {
-        console.log(id, ' - ', task, ' - ', status)
+        if (status === "done")
+          console.log(chalk.green(id, ' - ', task, ' - ', status))
+        else if (status === "todo")
+          console.log(chalk.blue(id, ' - ', task, ' - ', status))
+        else if (status === "in-progress")
+          console.log(chalk.yellow(id, ' - ', task, ' - ', status))
       }
-      else if (option === "done" && status === "Completed") {
-        console.log(id, ' - ', task, ' - ', status)
-      }
-      else if (option === "todo" && status === "Incomplete") {
-        console.log(id, ' - ', task, ' - ', status)
-      }
-      else if (option === "in-progress" && status === "Inprogress") {
+      else if (option === status) {
         console.log(id, ' - ', task, ' - ', status)
       }
     }
@@ -61,8 +60,10 @@ program
 // Add new task
 async function addTask(task) {
   let allTasks = await readAllTasks()
-  let newId = Math.max(...allTasks.map(task => task.id)) + 1
-  allTasks.push({ id: newId, task: task, status: "Incomplete" })
+  let newId = allTasks.length === 0 ? 1 : Math.max(...allTasks.map(task => task.id)) + 1
+  let currentDate = new Date()
+  currentDate = currentDate.toISOString().slice(0, 10);
+  allTasks.push({ id: newId, task: task, status: "todo", createdAt: currentDate, updatedAt: currentDate })
 
   console.log(allTasks)
 
@@ -75,7 +76,6 @@ async function addTask(task) {
     console.log("Error adding task:", err)
     throw err
   }
-
 }
 
 program
@@ -115,12 +115,14 @@ program
     await deleteTask(taskId)
   })
 
-// Mark complete/ inprogress/ incomplete
+// Mark done/ in-progress/ todo
 async function editStatus(taskId, status) {
   let allTasks = await readAllTasks()
   for (let i = 0; i < allTasks.length; i++) {
     if (allTasks[i].id === parseInt(taskId)) {
       allTasks[i].status = status
+      const currentDate = new Date()
+      allTasks[i].updatedAt = currentDate.toISOString().slice(0, 10);
       break
     }
   }
@@ -128,7 +130,7 @@ async function editStatus(taskId, status) {
   try {
     const data = JSON.stringify(allTasks)
     await fs.writeFile(sourceFile, data)
-    console.log(`"${taskId}" - Marked completed`)
+    console.log(`"${taskId}" - Marked ${status}`)
   }
   catch (err) {
     console.log("Error marking complete:", err)
@@ -140,21 +142,21 @@ program
   .command('mark-done <id>')
   .description('Mark a task completed')
   .action(async (taskId) => {
-    await editStatus(taskId, "Completed")
+    await editStatus(taskId, "done")
   })
 
 program
   .command('mark-in-progress <id>')
   .description('Mark a task completed')
   .action(async (taskId) => {
-    await editStatus(taskId, "Inprogress")
+    await editStatus(taskId, "in-progress")
   })
 
 program
-  .command('mark-incomplete <id>')
+  .command('mark-todo <id>')
   .description('Mark a task completed')
   .action(async (taskId) => {
-    await editStatus(taskId, "Incomplete")
+    await editStatus(taskId, "todo")
   })
 
 // Edit tasks
@@ -184,28 +186,6 @@ program
   .action(async (id, task) => {
     await editTasks(id, task)
   })
-
-//program
-//  .command('create')
-//  .description('Create a new item with interactive input')
-//  .action(async () => {
-//    const answers = await inquirer.prompt([
-//      {
-//        type: 'input',
-//        name: 'name',
-//        message: 'Enter the item name:',
-//        validate: (input) => input.length >= 3 ? true : 'The name must be at least 3 characters long.'
-//      },
-//      {
-//        type: 'list',
-//        name: 'type',
-//        message: 'Select the item type:',
-//        choices: ['default', 'special', 'custom']
-//      }
-//    ])
-//
-//    console.log(chalk.green(`Successfully created item "${answers.name}" of type "${answers.type}"`))
-//  })
 
 program.parse()
 
