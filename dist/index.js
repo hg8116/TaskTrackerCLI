@@ -2,24 +2,13 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import Table from 'cli-table3';
-import fs from 'fs/promises';
+import { addTask, deleteTask, editStatus, editTasks, readAllTasks } from "./core/taskServices.js";
 const program = new Command();
-const sourceFile = "./tasks.json";
 program
     .name('task-tracker-cli')
     .description('A CLI app to track your all tasks')
     .version('1.0.0');
 // List all tasks
-async function readAllTasks() {
-    try {
-        const data = await fs.readFile(sourceFile, { encoding: "utf-8" });
-        return JSON.parse(data);
-    }
-    catch (err) {
-        console.error("Error reading file:", err);
-        throw err;
-    }
-}
 program
     .command('list [option]')
     .description('List tasks')
@@ -51,23 +40,6 @@ program
     console.log(taskTable.toString());
 });
 // Add new task
-async function addTask(task) {
-    let allTasks = await readAllTasks();
-    let newId = allTasks.length === 0 ? 1 : Math.max(...allTasks.map(task => task.id)) + 1;
-    let currentDate = new Date();
-    let formattedDate = currentDate.toISOString().slice(0, 10);
-    allTasks.push({ id: newId, description: task, status: "todo", createdAt: formattedDate, updatedAt: formattedDate });
-    console.log(allTasks);
-    try {
-        const data = JSON.stringify(allTasks);
-        await fs.writeFile(sourceFile, data);
-        console.log(`New task added - "${task}"`);
-    }
-    catch (err) {
-        console.log("Error adding task:", err);
-        throw err;
-    }
-}
 program
     .command('add <task>')
     .description('Add new task')
@@ -75,22 +47,6 @@ program
     await addTask(task);
 });
 // Delete new task
-async function deleteTask(taskId) {
-    let allTasks = await readAllTasks();
-    let deleteIndex = allTasks.findIndex((val) => val.id === parseInt(taskId));
-    if (deleteIndex > -1) {
-        allTasks.splice(deleteIndex, 1);
-    }
-    try {
-        const data = JSON.stringify(allTasks);
-        await fs.writeFile(sourceFile, data);
-        console.log(`"${taskId}" - Task deleted`);
-    }
-    catch (err) {
-        console.log("Error removing task:", err);
-        throw err;
-    }
-}
 program
     .command('delete <id>')
     .description('Delete task using id')
@@ -98,29 +54,6 @@ program
     await deleteTask(taskId);
 });
 // Mark done/ in-progress/ todo
-async function editStatus(taskId, status) {
-    let allTasks = await readAllTasks();
-    for (let i = 0; i < allTasks.length; i++) {
-        let task = allTasks[i];
-        if (!task)
-            continue;
-        if (task.id === parseInt(taskId)) {
-            task.status = status;
-            const currentDate = new Date();
-            task.updatedAt = currentDate.toISOString().slice(0, 10);
-            break;
-        }
-    }
-    try {
-        const data = JSON.stringify(allTasks);
-        await fs.writeFile(sourceFile, data);
-        console.log(`"${taskId}" - Marked ${status}`);
-    }
-    catch (err) {
-        console.log("Error marking complete:", err);
-        throw err;
-    }
-}
 program
     .command('mark-done <id>')
     .description('Mark a task completed')
@@ -140,27 +73,6 @@ program
     await editStatus(taskId, "todo");
 });
 // Edit tasks
-async function editTasks(taskId, updatedTask) {
-    let allTasks = await readAllTasks();
-    for (let i = 0; i < allTasks.length; i++) {
-        let task = allTasks[i];
-        if (!task)
-            continue;
-        if (task.id === parseInt(taskId)) {
-            task.description = updatedTask;
-            break;
-        }
-    }
-    try {
-        const data = JSON.stringify(allTasks);
-        await fs.writeFile(sourceFile, data);
-        console.log(`"${taskId}" - Task updated`);
-    }
-    catch (err) {
-        console.log("Error updating task:", err);
-        throw err;
-    }
-}
 program
     .command('update <id> <task>')
     .description('Update a task using id')
