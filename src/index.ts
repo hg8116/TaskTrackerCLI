@@ -2,17 +2,12 @@
 
 import { Command } from "commander";
 import chalk from "chalk";
-import inquirer from "inquirer";
 import Table from 'cli-table3'
 import fs from 'fs/promises'
-import figlet from "figlet"
+import type { Task } from "./types";
 
 const program = new Command()
-const sourceFile = "tasks.json"
-
-//console.log(
-//  chalk.cyan(figlet.textSync("Task Tracker CLI", { horizontalLayout: "full" }))
-//)
+const sourceFile = "./tasks.json"
 
 program
   .name('task-tracker-cli')
@@ -20,11 +15,11 @@ program
   .version('1.0.0')
 
 // List all tasks
-async function readAllTasks() {
+async function readAllTasks(): Promise<Task[]> {
   try {
-    const data = await fs.readFile(sourceFile)
+    const data = await fs.readFile(sourceFile, { encoding: "utf-8" })
 
-    return JSON.parse(data)
+    return JSON.parse(data) as Task[]
   }
   catch (err) {
     console.error("Error reading file:", err)
@@ -49,9 +44,9 @@ program
 
     for (let i = 0; i < allTasks.length; i++) {
 
-      let id = allTasks[i].id
-      let description = allTasks[i].task
-      let status = allTasks[i].status
+      let id = allTasks[i]?.id
+      let description = allTasks[i]?.description
+      let status = allTasks[i]?.status
 
       if (!option) {
         if (status === "done")
@@ -69,12 +64,12 @@ program
   })
 
 // Add new task
-async function addTask(task) {
+async function addTask(task: string): Promise<void> {
   let allTasks = await readAllTasks()
   let newId = allTasks.length === 0 ? 1 : Math.max(...allTasks.map(task => task.id)) + 1
   let currentDate = new Date()
-  currentDate = currentDate.toISOString().slice(0, 10);
-  allTasks.push({ id: newId, task: task, status: "todo", createdAt: currentDate, updatedAt: currentDate })
+  let formattedDate = currentDate.toISOString().slice(0, 10);
+  allTasks.push({ id: newId, description: task, status: "todo", createdAt: formattedDate, updatedAt: formattedDate })
 
   console.log(allTasks)
 
@@ -98,7 +93,7 @@ program
 
 
 // Delete new task
-async function deleteTask(taskId) {
+async function deleteTask(taskId: string): Promise<void> {
   let allTasks = await readAllTasks()
   let deleteIndex = allTasks.findIndex((val) => val.id === parseInt(taskId))
 
@@ -125,13 +120,17 @@ program
   })
 
 // Mark done/ in-progress/ todo
-async function editStatus(taskId, status) {
-  let allTasks = await readAllTasks()
+async function editStatus(taskId: string, status: Task["status"]): Promise<void> {
+  let allTasks: Task[] = await readAllTasks()
   for (let i = 0; i < allTasks.length; i++) {
-    if (allTasks[i].id === parseInt(taskId)) {
-      allTasks[i].status = status
+    let task = allTasks[i]
+    if (!task)
+      continue
+
+    if (task.id === parseInt(taskId)) {
+      task.status = status
       const currentDate = new Date()
-      allTasks[i].updatedAt = currentDate.toISOString().slice(0, 10);
+      task.updatedAt = currentDate.toISOString().slice(0, 10);
       break
     }
   }
@@ -169,11 +168,14 @@ program
   })
 
 // Edit tasks
-async function editTasks(taskId, updatedTask) {
+async function editTasks(taskId: string, updatedTask: string): Promise<void> {
   let allTasks = await readAllTasks()
   for (let i = 0; i < allTasks.length; i++) {
-    if (allTasks[i].id === parseInt(taskId)) {
-      allTasks[i].task = updatedTask
+    let task = allTasks[i]
+    if (!task)
+      continue
+    if (task.id === parseInt(taskId)) {
+      task.description = updatedTask
       break
     }
   }
@@ -198,4 +200,4 @@ program
 
 program.parse()
 
-const options = program.opts()
+// const options = program.opts()

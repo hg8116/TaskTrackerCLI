@@ -18,6 +18,11 @@
     "inquirer": "^13.1.0"
   },
   "bin": {
-    "tt-cli": "./index.js"
+    "tt-cli": "./dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
