@@ -16,6 +16,16 @@ export async function readAllTasks() {
         throw err;
     }
 }
+export async function writeAllTasks(allTasks) {
+    try {
+        const data = JSON.stringify(allTasks);
+        await fs.writeFile(TASKS_FILE_PATH, data);
+    }
+    catch (err) {
+        console.log("Error writing tasks: ", err);
+        throw err;
+    }
+}
 export async function addTask(task) {
     let allTasks = await readAllTasks();
     let newId = allTasks.length === 0 ? 1 : Math.max(...allTasks.map(task => task.id)) + 1;

@@ -1,7 +1,8 @@
-import { Task } from "../types"
+import { Task } from "../types.js"
 import fs from 'fs/promises'
 import { fileURLToPath } from "url"
 import { dirname, resolve } from "path"
+import { stderr } from "process"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -18,6 +19,17 @@ export async function readAllTasks(): Promise<Task[]> {
   }
   catch (err) {
     console.error("Error reading file:", err)
+    throw err
+  }
+}
+
+export async function writeAllTasks(allTasks: Task[]): Promise<void> {
+  try {
+    const data = JSON.stringify(allTasks)
+    await fs.writeFile(TASKS_FILE_PATH, data)
+  }
+  catch (err) {
+    console.log("Error writing tasks: ", err)
     throw err
   }
 }
