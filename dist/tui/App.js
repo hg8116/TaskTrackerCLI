@@ -26,6 +26,12 @@ const App = () => {
             return [...prevTasks, newTask];
         });
     };
+    const editTaskDescription = (editedDescription, taskIndex) => {
+        if (!editedDescription.trim())
+            return;
+        tasks[taskIndex].description = editedDescription;
+        setTasks(tasks);
+    };
     useEffect(() => {
         const getTasks = async () => {
             const allTasks = await readAllTasks();
@@ -34,57 +40,55 @@ const App = () => {
         getTasks();
     }, []);
     useInput(async (input, key) => {
-        if (key.ctrl && input === 'q') {
+        if (input === 'q') {
             process.exit(0);
         }
+        if (input === "s" && isDirty && mode === "list") {
+            await writeAllTasks(tasks);
+            setIsDirty(false);
+            return;
+        }
+        if (mode === "edit" || mode === "add") {
+            if (key.escape) {
+                setMode("list");
+            }
+            return;
+        }
+        if (mode !== 'list')
+            return;
         if (key.upArrow) {
             setSelectedIndex(prevIndex => Math.max(0, prevIndex - 1));
         }
         if (key.downArrow) {
             setSelectedIndex(prevIndex => Math.min(tasks.length - 1, prevIndex + 1));
         }
-        if (key.escape) {
-            setMode("list");
+        if (input === "a") {
+            setMode("add");
         }
-        if (input === "s" && isDirty) {
-            await writeAllTasks(tasks);
-            setIsDirty(false);
+        if (input === "e") {
+            setMode("edit");
+            setEditTask(tasks[selectedIndex].description);
         }
         if (input === "l") {
             setMode("list");
         }
-        if (input === "a") {
-            setMode("add");
+        if (input === ' ') {
+            setTasks(prevTasks => {
+                setIsDirty(true);
+                const newTasks = [...prevTasks];
+                const task = newTasks[selectedIndex];
+                newTasks[selectedIndex] = {
+                    ...task,
+                    status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
+                };
+                return newTasks;
+            });
         }
-        if (mode === "list") {
-            if (input === ' ') {
-                setTasks(prevTasks => {
-                    setIsDirty(true);
-                    const newTasks = [...prevTasks];
-                    const task = newTasks[selectedIndex];
-                    newTasks[selectedIndex] = {
-                        ...task,
-                        status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
-                    };
-                    return newTasks;
-                });
-            }
-            if (input === 'd') {
-                setTasks(prevTasks => {
-                    setIsDirty(true);
-                    const newTasks = [...prevTasks];
-                    setSelectedIndex(prevIndex => {
-                        if (prevIndex === tasks.length - 1)
-                            return prevIndex - 1;
-                        return prevIndex;
-                    });
-                    return [...newTasks.slice(0, selectedIndex), ...newTasks.slice(selectedIndex + 1)];
-                });
-            }
-            if (input === "e") {
-                //setMode("edit")
-                //setEditTask(tasks[selectedIndex].description)
-            }
+        if (input === 'd') {
+            setTasks(prevTasks => {
+                setIsDirty(true);
+                return prevTasks.filter((_, i) => i !== selectedIndex);
+            });
         }
     });
     return (React.createElement(Box, { flexDirection: 'column' },
@@ -128,11 +132,20 @@ const App = () => {
                         "\n",
                         "Enter to save . Esc to cancel")))) :
             React.createElement(React.Fragment, null),
+        (mode === "edit") ?
+            (React.createElement(Box, null,
+                React.createElement(TextInput, { value: editTask, onChange: setEditTask, onSubmit: () => {
+                        editTaskDescription(editTask, selectedIndex);
+                        setEditTask("");
+                        setMode("list");
+                        setIsDirty(true);
+                    } }))) :
+            React.createElement(React.Fragment, null),
         React.createElement(Box, { paddingX: 1, paddingTop: 1 },
             React.createElement(Text, null,
                 "Mode: ",
                 mode)),
         React.createElement(Box, { paddingX: 1, paddingTop: 1 },
-            React.createElement(Text, { dimColor: true }, "\u2191\u2193 Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    ctrl+q Quit"))));
+            React.createElement(Text, { dimColor: true }, "\u2191\u2193 Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    q Quit"))));
 };
 export default App;
