@@ -87,6 +87,11 @@ const App = () => {
         if (input === 'd') {
             setTasks(prevTasks => {
                 setIsDirty(true);
+                setSelectedIndex(prevIndex => {
+                    if (prevIndex === tasks.length - 1)
+                        return prevIndex - 1;
+                    return prevIndex;
+                });
                 return prevTasks.filter((_, i) => i !== selectedIndex);
             });
         }

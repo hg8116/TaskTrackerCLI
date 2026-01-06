@@ -4,7 +4,6 @@ import { Box, Text, useInput } from 'ink'
 import { Task } from '../types.js'
 import { stderr } from 'process'
 import TextInput from 'ink-text-input'
-import { listeners } from 'cluster'
 
 const App = () => {
 
@@ -104,6 +103,11 @@ const App = () => {
     if (input === 'd') {
       setTasks(prevTasks => {
         setIsDirty(true)
+        setSelectedIndex(prevIndex => {
+          if (prevIndex === tasks.length - 1)
+            return prevIndex - 1
+          return prevIndex
+        })
         return prevTasks.filter((_, i) => i !== selectedIndex)
       })
     }

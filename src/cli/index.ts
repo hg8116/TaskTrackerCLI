@@ -1,24 +1,16 @@
-#!/usr/bin/env node
-
-import { Command } from "commander";
-import chalk from "chalk";
+import { Command } from "commander"
+import { addTask, deleteTask, editStatus, editTasks, readAllTasks } from "../core/taskServices.js"
+import chalk from "chalk"
 import Table from 'cli-table3'
-import { addTask, deleteTask, editStatus, editTasks, readAllTasks } from "./core/taskServices.js";
-import { render } from "ink";
-import App from "./tui/App.js"
-import React from "react";
 
-const program = new Command()
+export function runCli(argv: string[]) {
 
-program
-  .name('task-tracker-cli')
-  .description('A CLI app to track your all tasks')
-  .version('1.0.0')
+  const program = new Command()
 
-if (process.argv.length <= 2) {
-  render(<App />)
-}
-else {
+  program
+    .name('task-tracker-cli')
+    .description('A CLI app to track your all tasks')
+    .version('1.0.0')
 
   // List all tasks
   program
@@ -58,7 +50,6 @@ else {
     })
 
   // Add new task
-
   program
     .command('add <task>')
     .description('Add new task')
@@ -68,7 +59,6 @@ else {
 
 
   // Delete new task
-
   program
     .command('delete <id>')
     .description('Delete task using id')
@@ -77,7 +67,6 @@ else {
     })
 
   // Mark done/ in-progress/ todo
-
   program
     .command('mark-done <id>')
     .description('Mark a task completed')
@@ -100,7 +89,6 @@ else {
     })
 
   // Edit tasks
-
   program
     .command('update <id> <task>')
     .description('Update a task using id')
@@ -109,6 +97,4 @@ else {
     })
 
   program.parse()
-
-  // const options = program.opts()
 }
