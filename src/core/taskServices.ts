@@ -9,7 +9,6 @@ const __dirname = dirname(__filename)
 
 const projectRoot = resolve(__dirname, "..", "..")
 export const TASKS_FILE_PATH = resolve(projectRoot, "tasks.json")
-// const sourceFile = "../tasks.json"
 
 export async function readAllTasks(): Promise<Task[]> {
   try {

@@ -57,7 +57,6 @@ export function runCli(argv: string[]) {
       await addTask(task)
     })
 
-
   // Delete new task
   program
     .command('delete <id>')

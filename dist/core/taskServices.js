@@ -5,7 +5,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, "..", "..");
 export const TASKS_FILE_PATH = resolve(projectRoot, "tasks.json");
-// const sourceFile = "../tasks.json"
 export async function readAllTasks() {
     try {
         const data = await fs.readFile(TASKS_FILE_PATH, { encoding: "utf-8" });

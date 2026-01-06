@@ -43,6 +43,31 @@ const App = () => {
     setTasks(tasks)
   }
 
+  const toggleStatus = () => {
+    setTasks(prevTasks => {
+      setIsDirty(true)
+      const newTasks = [...prevTasks]
+      const task = newTasks[selectedIndex]
+      newTasks[selectedIndex] = {
+        ...task,
+        status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
+      }
+      return newTasks
+    })
+  }
+
+  const deleteTask = () => {
+    setTasks(prevTasks => {
+      setIsDirty(true)
+      setSelectedIndex(prevIndex => {
+        if (prevIndex === tasks.length - 1)
+          return prevIndex - 1
+        return prevIndex
+      })
+      return prevTasks.filter((_, i) => i !== selectedIndex)
+    })
+  }
+
   useEffect(() => {
     const getTasks = async () => {
       const allTasks = await readAllTasks()
@@ -51,17 +76,21 @@ const App = () => {
     getTasks()
   }, [])
 
-  useInput(async (input, key) => {
+  useInput((input, _) => {
     if (input === 'q') {
       process.exit(0)
     }
+  })
 
+  useInput(async (input, _) => {
     if (input === "s" && isDirty && mode === "list") {
       await writeAllTasks(tasks)
       setIsDirty(false)
       return
     }
+  })
 
+  useInput(async (input, key) => {
     if (mode === "edit" || mode === "add") {
       if (key.escape) {
         setMode("list")
@@ -89,27 +118,10 @@ const App = () => {
       setMode("list")
     }
     if (input === ' ') {
-      setTasks(prevTasks => {
-        setIsDirty(true)
-        const newTasks = [...prevTasks]
-        const task = newTasks[selectedIndex]
-        newTasks[selectedIndex] = {
-          ...task,
-          status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
-        }
-        return newTasks
-      })
+      toggleStatus()
     }
     if (input === 'd') {
-      setTasks(prevTasks => {
-        setIsDirty(true)
-        setSelectedIndex(prevIndex => {
-          if (prevIndex === tasks.length - 1)
-            return prevIndex - 1
-          return prevIndex
-        })
-        return prevTasks.filter((_, i) => i !== selectedIndex)
-      })
+      deleteTask()
     }
   })
 
@@ -120,6 +132,7 @@ const App = () => {
         <Box width={40}><Text bold>Description</Text></Box>
         <Box width={20}><Text bold>Status</Text></Box>
       </Box>
+
       {tasks.map((task, index) => {
         const isSelectedIndex = selectedIndex === index
         const ROW_BG = isSelectedIndex ? 'blue' : undefined
@@ -143,50 +156,48 @@ const App = () => {
       })}
 
       {
-        (mode === "add") ?
-          (
-            <Box flexDirection='column'>
-              <Box>
-                <Text bold>Enter new task: </Text>
-                <TextInput
-                  value={newTaskDescription}
-                  onChange={setNewTaskDescription}
-                  placeholder='What do you need to do?'
-                  onSubmit={() => {
-                    addNewTask(newTaskDescription)
-                    setNewTaskDescription("")
-                    setMode("list")
-                    setIsDirty(true)
-                  }}
-                />
-              </Box>
-              <Box>
-                <Text dimColor> {"\n"}Enter to save . Esc to cancel</Text>
-              </Box>
+        (mode === "add") &&
+        (
+          <Box flexDirection='column'>
+            <Box>
+              <Text bold>Enter new task: </Text>
+              <TextInput
+                value={newTaskDescription}
+                onChange={setNewTaskDescription}
+                placeholder='What do you need to do?'
+                onSubmit={() => {
+                  addNewTask(newTaskDescription)
+                  setNewTaskDescription("")
+                  setMode("list")
+                  setIsDirty(true)
+                }}
+              />
             </Box>
-          ) :
-          <></>
+            <Box>
+              <Text dimColor> {"\n"}Enter to save . Esc to cancel</Text>
+            </Box>
+          </Box>
+        )
       }
 
       {
-        (mode === "edit") ?
-          (
-            <Box>
-              <TextInput
-                value={editTask}
-                onChange={setEditTask}
-                onSubmit={
-                  () => {
-                    editTaskDescription(editTask, selectedIndex)
-                    setEditTask("")
-                    setMode("list")
-                    setIsDirty(true)
-                  }
+        (mode === "edit") &&
+        (
+          <Box>
+            <TextInput
+              value={editTask}
+              onChange={setEditTask}
+              onSubmit={
+                () => {
+                  editTaskDescription(editTask, selectedIndex)
+                  setEditTask("")
+                  setMode("list")
+                  setIsDirty(true)
                 }
-              />
-            </Box>
-          ) :
-          <></>
+              }
+            />
+          </Box>
+        )
       }
 
       <Box paddingX={1} paddingTop={1}>

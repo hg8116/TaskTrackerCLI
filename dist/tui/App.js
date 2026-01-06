@@ -32,6 +32,29 @@ const App = () => {
         tasks[taskIndex].description = editedDescription;
         setTasks(tasks);
     };
+    const toggleStatus = () => {
+        setTasks(prevTasks => {
+            setIsDirty(true);
+            const newTasks = [...prevTasks];
+            const task = newTasks[selectedIndex];
+            newTasks[selectedIndex] = {
+                ...task,
+                status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
+            };
+            return newTasks;
+        });
+    };
+    const deleteTask = () => {
+        setTasks(prevTasks => {
+            setIsDirty(true);
+            setSelectedIndex(prevIndex => {
+                if (prevIndex === tasks.length - 1)
+                    return prevIndex - 1;
+                return prevIndex;
+            });
+            return prevTasks.filter((_, i) => i !== selectedIndex);
+        });
+    };
     useEffect(() => {
         const getTasks = async () => {
             const allTasks = await readAllTasks();
@@ -39,15 +62,19 @@ const App = () => {
         };
         getTasks();
     }, []);
-    useInput(async (input, key) => {
+    useInput((input, _) => {
         if (input === 'q') {
             process.exit(0);
         }
+    });
+    useInput(async (input, _) => {
         if (input === "s" && isDirty && mode === "list") {
             await writeAllTasks(tasks);
             setIsDirty(false);
             return;
         }
+    });
+    useInput(async (input, key) => {
         if (mode === "edit" || mode === "add") {
             if (key.escape) {
                 setMode("list");
@@ -73,27 +100,10 @@ const App = () => {
             setMode("list");
         }
         if (input === ' ') {
-            setTasks(prevTasks => {
-                setIsDirty(true);
-                const newTasks = [...prevTasks];
-                const task = newTasks[selectedIndex];
-                newTasks[selectedIndex] = {
-                    ...task,
-                    status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
-                };
-                return newTasks;
-            });
+            toggleStatus();
         }
         if (input === 'd') {
-            setTasks(prevTasks => {
-                setIsDirty(true);
-                setSelectedIndex(prevIndex => {
-                    if (prevIndex === tasks.length - 1)
-                        return prevIndex - 1;
-                    return prevIndex;
-                });
-                return prevTasks.filter((_, i) => i !== selectedIndex);
-            });
+            deleteTask();
         }
     });
     return (React.createElement(Box, { flexDirection: 'column' },
@@ -121,7 +131,7 @@ const App = () => {
                         " ",
                         task.status))));
         }),
-        (mode === "add") ?
+        (mode === "add") &&
             (React.createElement(Box, { flexDirection: 'column' },
                 React.createElement(Box, null,
                     React.createElement(Text, { bold: true }, "Enter new task: "),
@@ -135,17 +145,15 @@ const App = () => {
                     React.createElement(Text, { dimColor: true },
                         " ",
                         "\n",
-                        "Enter to save . Esc to cancel")))) :
-            React.createElement(React.Fragment, null),
-        (mode === "edit") ?
+                        "Enter to save . Esc to cancel")))),
+        (mode === "edit") &&
             (React.createElement(Box, null,
                 React.createElement(TextInput, { value: editTask, onChange: setEditTask, onSubmit: () => {
                         editTaskDescription(editTask, selectedIndex);
                         setEditTask("");
                         setMode("list");
                         setIsDirty(true);
-                    } }))) :
-            React.createElement(React.Fragment, null),
+                    } }))),
         React.createElement(Box, { paddingX: 1, paddingTop: 1 },
             React.createElement(Text, null,
                 "Mode: ",
