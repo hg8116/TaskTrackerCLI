@@ -79,5 +79,5 @@ export function runCli(argv) {
         .action(async (id, task) => {
         await editTasks(id, task);
     });
-    program.parse();
+    program.parse(argv);
 }

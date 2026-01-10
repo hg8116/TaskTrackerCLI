@@ -95,5 +95,5 @@ export function runCli(argv: string[]) {
       await editTasks(id, task)
     })
 
-  program.parse()
+  program.parse(argv)
 }
