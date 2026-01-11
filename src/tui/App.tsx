@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { readAllTasks, writeAllTasks } from '../core/taskServices.js'
 import { Box, Text, useInput } from 'ink'
 import { Task } from '../types.js'
-import { stderr } from 'process'
 import TextInput from 'ink-text-input'
 import Spinner from 'ink-spinner'
+import { HistoryManager } from './history.js'
 
 const App = () => {
 
@@ -15,10 +15,13 @@ const App = () => {
   const [isDirty, setIsDirty] = useState<boolean>(false)
   const [newTaskDescription, setNewTaskDescription] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const history = useRef(new HistoryManager()).current
 
   const addNewTask = (description: string) => {
     if (!description.trim())
       return
+
+    history.snapshot(tasks)
 
     const formattedDate = new Date().toISOString().slice(0, 10)
     const newId = tasks.length === 0 ? 1 : Math.max(...tasks.map(task => task.id)) + 1
@@ -34,20 +37,32 @@ const App = () => {
     setTasks(prevTasks => {
       return [...prevTasks, newTask]
     })
+    setIsDirty(true)
   }
 
   const editTaskDescription = (editedDescription: string, taskIndex: number) => {
     if (!editedDescription.trim())
       return
 
-    tasks[taskIndex].description = editedDescription
-    tasks[taskIndex].updatedAt = new Date().toISOString().slice(0, 10)
-    setTasks(tasks)
+    history.snapshot(tasks)
+
+    setTasks(prev => {
+      const next = [...prev]
+      next[taskIndex] = {
+        ...next[taskIndex],
+        description: editedDescription,
+        updatedAt: new Date().toISOString().slice(0, 10)
+      }
+      return next
+    })
+
+    setIsDirty(true)
   }
 
   const toggleStatus = () => {
+    history.snapshot(tasks)
+
     setTasks(prevTasks => {
-      setIsDirty(true)
       const newTasks = [...prevTasks]
       const task = newTasks[selectedIndex]
       newTasks[selectedIndex] = {
@@ -57,18 +72,23 @@ const App = () => {
       }
       return newTasks
     })
+
+    setIsDirty(true)
   }
 
   const deleteTask = () => {
+    history.snapshot(tasks)
+
     setTasks(prevTasks => {
-      setIsDirty(true)
       setSelectedIndex(prevIndex => {
-        if (prevIndex === tasks.length - 1)
+        if (prevIndex === prevTasks.length - 1)
           return prevIndex - 1
         return prevIndex
       })
       return prevTasks.filter((_, i) => i !== selectedIndex)
     })
+
+    setIsDirty(true)
   }
 
   useEffect(() => {
@@ -127,6 +147,20 @@ const App = () => {
     }
     if (input === 'd') {
       deleteTask()
+    }
+    if (input === 'u') {
+      const prev = history.undo(tasks)
+      if (prev) {
+        setTasks(prev)
+        setIsDirty(true)
+      }
+    }
+    if (input === 'r') {
+      const next = history.redo(tasks)
+      if (next) {
+        setTasks(next)
+        setIsDirty(true)
+      }
     }
   })
 
@@ -216,7 +250,7 @@ const App = () => {
 
       <Box paddingX={1} paddingTop={1}>
         <Text dimColor>
-          ↑↓ Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    q Quit
+          ↑↓ Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    u Undo    r Redo    q Quit
         </Text>
       </Box>
     </Box>

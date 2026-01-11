@@ -16,14 +16,14 @@
   {
     "id": 15,
     "description": "fix app",
-    "status": "in-progress",
+    "status": "done",
     "createdAt": "2026-01-11",
     "updatedAt": "2026-01-11"
   },
   {
     "id": 16,
     "description": "watch series",
-    "status": "todo",
+    "status": "in-progress",
     "createdAt": "2026-01-11",
     "updatedAt": "2026-01-11"
   },
@@ -37,7 +37,21 @@
   {
     "id": 18,
     "description": "order groceries",
-    "status": "todo",
+    "status": "in-progress",
+    "createdAt": "2026-01-11",
+    "updatedAt": "2026-01-11"
+  },
+  {
+    "id": 19,
+    "description": "walk",
+    "status": "done",
+    "createdAt": "2026-01-11",
+    "updatedAt": "2026-01-11"
+  },
+  {
+    "id": 20,
+    "description": "run",
+    "status": "in-progress",
     "createdAt": "2026-01-11",
     "updatedAt": "2026-01-11"
   }

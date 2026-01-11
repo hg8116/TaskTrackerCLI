@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { readAllTasks, writeAllTasks } from '../core/taskServices.js';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import Spinner from 'ink-spinner';
+import { HistoryManager } from './history.js';
 const App = () => {
     const [tasks, setTasks] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -11,9 +12,11 @@ const App = () => {
     const [isDirty, setIsDirty] = useState(false);
     const [newTaskDescription, setNewTaskDescription] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const history = useRef(new HistoryManager()).current;
     const addNewTask = (description) => {
         if (!description.trim())
             return;
+        history.snapshot(tasks);
         const formattedDate = new Date().toISOString().slice(0, 10);
         const newId = tasks.length === 0 ? 1 : Math.max(...tasks.map(task => task.id)) + 1;
         const newTask = {
@@ -26,17 +29,26 @@ const App = () => {
         setTasks(prevTasks => {
             return [...prevTasks, newTask];
         });
+        setIsDirty(true);
     };
     const editTaskDescription = (editedDescription, taskIndex) => {
         if (!editedDescription.trim())
             return;
-        tasks[taskIndex].description = editedDescription;
-        tasks[taskIndex].updatedAt = new Date().toISOString().slice(0, 10);
-        setTasks(tasks);
+        history.snapshot(tasks);
+        setTasks(prev => {
+            const next = [...prev];
+            next[taskIndex] = {
+                ...next[taskIndex],
+                description: editedDescription,
+                updatedAt: new Date().toISOString().slice(0, 10)
+            };
+            return next;
+        });
+        setIsDirty(true);
     };
     const toggleStatus = () => {
+        history.snapshot(tasks);
         setTasks(prevTasks => {
-            setIsDirty(true);
             const newTasks = [...prevTasks];
             const task = newTasks[selectedIndex];
             newTasks[selectedIndex] = {
@@ -46,17 +58,19 @@ const App = () => {
             };
             return newTasks;
         });
+        setIsDirty(true);
     };
     const deleteTask = () => {
+        history.snapshot(tasks);
         setTasks(prevTasks => {
-            setIsDirty(true);
             setSelectedIndex(prevIndex => {
-                if (prevIndex === tasks.length - 1)
+                if (prevIndex === prevTasks.length - 1)
                     return prevIndex - 1;
                 return prevIndex;
             });
             return prevTasks.filter((_, i) => i !== selectedIndex);
         });
+        setIsDirty(true);
     };
     useEffect(() => {
         const getTasks = async () => {
@@ -109,6 +123,20 @@ const App = () => {
         }
         if (input === 'd') {
             deleteTask();
+        }
+        if (input === 'u') {
+            const prev = history.undo(tasks);
+            if (prev) {
+                setTasks(prev);
+                setIsDirty(true);
+            }
+        }
+        if (input === 'r') {
+            const next = history.redo(tasks);
+            if (next) {
+                setTasks(next);
+                setIsDirty(true);
+            }
         }
     });
     return (React.createElement(Box, { flexDirection: 'column' },
@@ -169,6 +197,6 @@ const App = () => {
                     React.createElement(Spinner, { type: 'dots' }),
                     " \"Saving\"") : "✓ Saved")),
         React.createElement(Box, { paddingX: 1, paddingTop: 1 },
-            React.createElement(Text, { dimColor: true }, "\u2191\u2193 Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    q Quit"))));
+            React.createElement(Text, { dimColor: true }, "\u2191\u2193 Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    u Undo    r Redo    q Quit"))));
 };
 export default App;
