@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { readAllTasks, writeAllTasks } from '../core/taskServices.js';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
+import Spinner from 'ink-spinner';
 const App = () => {
     const [tasks, setTasks] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -9,11 +10,11 @@ const App = () => {
     const [editTask, setEditTask] = useState("");
     const [isDirty, setIsDirty] = useState(false);
     const [newTaskDescription, setNewTaskDescription] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
     const addNewTask = (description) => {
         if (!description.trim())
             return;
-        const currentDate = new Date();
-        const formattedDate = currentDate.toISOString().slice(0, 10);
+        const formattedDate = new Date().toISOString().slice(0, 10);
         const newId = tasks.length === 0 ? 1 : Math.max(...tasks.map(task => task.id)) + 1;
         const newTask = {
             id: newId,
@@ -30,6 +31,7 @@ const App = () => {
         if (!editedDescription.trim())
             return;
         tasks[taskIndex].description = editedDescription;
+        tasks[taskIndex].updatedAt = new Date().toISOString().slice(0, 10);
         setTasks(tasks);
     };
     const toggleStatus = () => {
@@ -39,7 +41,8 @@ const App = () => {
             const task = newTasks[selectedIndex];
             newTasks[selectedIndex] = {
                 ...task,
-                status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
+                status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo",
+                updatedAt: new Date().toISOString().slice(0, 10)
             };
             return newTasks;
         });
@@ -69,7 +72,9 @@ const App = () => {
     });
     useInput(async (input, _) => {
         if (input === "s" && isDirty && mode === "list") {
+            setIsLoading(true);
             await writeAllTasks(tasks);
+            setIsLoading(false);
             setIsDirty(false);
             return;
         }
@@ -154,10 +159,15 @@ const App = () => {
                         setMode("list");
                         setIsDirty(true);
                     } }))),
-        React.createElement(Box, { paddingX: 1, paddingTop: 1 },
+        React.createElement(Box, { paddingX: 1, paddingTop: 1, gap: 2 },
             React.createElement(Text, null,
                 "Mode: ",
-                mode)),
+                mode),
+            React.createElement(Text, null,
+                "Status: ",
+                isDirty ? "✗ Unsaved" : isLoading ? React.createElement(React.Fragment, null,
+                    React.createElement(Spinner, { type: 'dots' }),
+                    " \"Saving\"") : "✓ Saved")),
         React.createElement(Box, { paddingX: 1, paddingTop: 1 },
             React.createElement(Text, { dimColor: true }, "\u2191\u2193 Navigate   space Toggle-status   a Add   e Edit    s Save    d Delete    q Quit"))));
 };

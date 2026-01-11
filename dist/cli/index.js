@@ -3,6 +3,12 @@ import { addTask, deleteTask, editStatus, editTasks, readAllTasks } from "../cor
 import chalk from "chalk";
 import Table from 'cli-table3';
 export function runCli(argv) {
+    function withErrorHandling(fn) {
+        return (...args) => fn(...args).catch(err => {
+            console.log(chalk.red(err.message ?? "Unexpected error"));
+            process.exit(1);
+        });
+    }
     const program = new Command();
     program
         .name('task-tracker-cli')
@@ -11,12 +17,12 @@ export function runCli(argv) {
     // List all tasks
     program
         .command('list [option]')
+        .alias('ls')
         .description('List tasks')
-        .action(async (option) => {
+        .action(withErrorHandling(async (option) => {
         const allTasks = await readAllTasks();
         if (![undefined, "done", "todo", "in-progress"].includes(option)) {
-            console.error(chalk.red("Invalid option, it should be 'done', 'todo', 'in-progress', or blank"));
-            process.exit(1);
+            throw new Error("Invalid option...");
         }
         let taskTable = new Table({
             head: ["ID", "Description", "Status"],
@@ -38,46 +44,83 @@ export function runCli(argv) {
             }
         }
         console.log(taskTable.toString());
-    });
+    }));
     // Add new task
     program
         .command('add <task>')
+        .alias('a')
         .description('Add new task')
-        .action(async (task) => {
-        await addTask(task);
-    });
+        .action(withErrorHandling(async (task) => {
+        const newTask = await addTask(task);
+        console.log(chalk.green(`✓ Added task #${newTask.id}: ${newTask.description}`));
+    }));
     // Delete new task
     program
         .command('delete <id>')
+        .alias('rm')
         .description('Delete task using id')
-        .action(async (taskId) => {
-        await deleteTask(taskId);
-    });
+        .action(withErrorHandling(async (taskId) => {
+        if (Number.isNaN(Number(taskId)))
+            throw new Error("Task ID must be a number");
+        const isDeleted = await deleteTask(taskId);
+        if (isDeleted)
+            console.log(chalk.green(`✓ Deleted task #${taskId}`));
+        else
+            throw new Error(`✗ Task #${taskId} not found`);
+    }));
     // Mark done/ in-progress/ todo
     program
         .command('mark-done <id>')
+        .alias('md')
         .description('Mark a task completed')
-        .action(async (taskId) => {
-        await editStatus(taskId, "done");
-    });
+        .action(withErrorHandling(async (taskId) => {
+        if (Number.isNaN(Number(taskId)))
+            throw new Error("Task ID must be a number");
+        const isUpdated = await editStatus(taskId, "done");
+        if (isUpdated)
+            console.log(chalk.green(`✓ Updated task #${taskId}`));
+        else
+            throw new Error(`✗ Task #${taskId} not found`);
+    }));
     program
         .command('mark-in-progress <id>')
+        .alias('mip')
         .description('Mark a task completed')
-        .action(async (taskId) => {
-        await editStatus(taskId, "in-progress");
-    });
+        .action(withErrorHandling(async (taskId) => {
+        if (Number.isNaN(Number(taskId)))
+            throw new Error("Task ID must be a number");
+        const isUpdated = await editStatus(taskId, "in-progress");
+        if (isUpdated)
+            console.log(chalk.green(`✓ Updated task #${taskId}`));
+        else
+            throw new Error(`✗ Task #${taskId} not found`);
+    }));
     program
         .command('mark-todo <id>')
+        .alias('mt')
         .description('Mark a task completed')
-        .action(async (taskId) => {
-        await editStatus(taskId, "todo");
-    });
+        .action(withErrorHandling(async (taskId) => {
+        if (Number.isNaN(Number(taskId)))
+            throw new Error("Task ID must be a number");
+        const isUpdated = await editStatus(taskId, "todo");
+        if (isUpdated)
+            console.log(chalk.green(`✓ Updated task #${taskId}`));
+        else
+            throw new Error(`✗ Task #${taskId} not found`);
+    }));
     // Edit tasks
     program
         .command('update <id> <task>')
+        .alias('u')
         .description('Update a task using id')
-        .action(async (id, task) => {
-        await editTasks(id, task);
-    });
+        .action(withErrorHandling(async (taskId, task) => {
+        if (Number.isNaN(Number(taskId)))
+            throw new Error("Task ID must be a number");
+        const isUpdated = await editTasks(taskId, task);
+        if (isUpdated)
+            console.log(chalk.green(`✓ Updated task #${taskId}`));
+        else
+            throw new Error(`✗ Task #${taskId} not found`);
+    }));
     program.parse(argv);
 }

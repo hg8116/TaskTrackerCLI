@@ -42,8 +42,10 @@ async function persistTasks(updater) {
     const tasks = await readAllTasks();
     const updatedTasks = updater(tasks) ?? tasks;
     await writeAllTasks(updatedTasks);
+    return updatedTasks;
 }
 export async function addTask(description) {
+    let createdTask;
     await persistTasks(tasks => {
         tasks.push({
             id: tasks.length === 0 ? 1 : Math.max(...tasks.map(task => task.id)) + 1,
@@ -52,31 +54,44 @@ export async function addTask(description) {
             createdAt: new Date().toISOString().slice(0, 10),
             updatedAt: new Date().toISOString().slice(0, 10)
         });
+        createdTask = tasks[tasks.length - 1];
     });
+    return createdTask;
 }
 export async function deleteTask(taskId) {
+    let deleted = false;
     await persistTasks(tasks => {
         const index = tasks.findIndex(t => t.id === parseInt(taskId));
         if (index === -1)
-            throw new Error("Task not found");
-        tasks.splice(index, 1);
+            return tasks;
+        deleted = true;
+        return tasks.filter((_, i) => i !== index);
     });
+    return deleted;
 }
 export async function editStatus(taskId, status) {
+    let isUpdated = false;
     await persistTasks(tasks => {
         const task = tasks.find(t => t.id === parseInt(taskId));
         if (!task)
-            throw new Error("Task not found");
+            return tasks;
+        isUpdated = true;
         task.status = status;
         task.updatedAt = new Date().toISOString().slice(0, 10);
+        return tasks;
     });
+    return isUpdated;
 }
 export async function editTasks(taskId, updatedTask) {
+    let isUpdated = false;
     await persistTasks(tasks => {
         const task = tasks.find(t => t.id === parseInt(taskId));
         if (!task)
-            throw new Error("Task not found");
+            return tasks;
+        isUpdated = true;
         task.description = updatedTask;
         task.updatedAt = new Date().toISOString().slice(0, 10);
+        return tasks;
     });
+    return isUpdated;
 }

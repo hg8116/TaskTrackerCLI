@@ -4,6 +4,7 @@ import { Box, Text, useInput } from 'ink'
 import { Task } from '../types.js'
 import { stderr } from 'process'
 import TextInput from 'ink-text-input'
+import Spinner from 'ink-spinner'
 
 const App = () => {
 
@@ -13,13 +14,13 @@ const App = () => {
   const [editTask, setEditTask] = useState<string>("")
   const [isDirty, setIsDirty] = useState<boolean>(false)
   const [newTaskDescription, setNewTaskDescription] = useState<string>("")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const addNewTask = (description: string) => {
     if (!description.trim())
       return
 
-    const currentDate = new Date()
-    const formattedDate = currentDate.toISOString().slice(0, 10)
+    const formattedDate = new Date().toISOString().slice(0, 10)
     const newId = tasks.length === 0 ? 1 : Math.max(...tasks.map(task => task.id)) + 1
 
     const newTask: Task = {
@@ -40,6 +41,7 @@ const App = () => {
       return
 
     tasks[taskIndex].description = editedDescription
+    tasks[taskIndex].updatedAt = new Date().toISOString().slice(0, 10)
     setTasks(tasks)
   }
 
@@ -50,7 +52,8 @@ const App = () => {
       const task = newTasks[selectedIndex]
       newTasks[selectedIndex] = {
         ...task,
-        status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo"
+        status: task.status === "todo" ? "in-progress" : task.status === "in-progress" ? "done" : "todo",
+        updatedAt: new Date().toISOString().slice(0, 10)
       }
       return newTasks
     })
@@ -84,7 +87,9 @@ const App = () => {
 
   useInput(async (input, _) => {
     if (input === "s" && isDirty && mode === "list") {
+      setIsLoading(true)
       await writeAllTasks(tasks)
+      setIsLoading(false)
       setIsDirty(false)
       return
     }
@@ -200,9 +205,12 @@ const App = () => {
         )
       }
 
-      <Box paddingX={1} paddingTop={1}>
+      <Box paddingX={1} paddingTop={1} gap={2}>
         <Text>
           Mode: {mode}
+        </Text>
+        <Text>
+          Status: {isDirty ? "✗ Unsaved" : isLoading ? <><Spinner type='dots' /> "Saving"</> : "✓ Saved"}
         </Text>
       </Box>
 
